@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>For You</title>
+  <style>
+    :root { --pink: #ff91bc; --cream: #fff7ee; }
+    * { box-sizing: border-box; }
+    html, body { width: 100%; min-height: 100%; margin: 0; }
+    body { overflow: hidden; color: var(--cream); font-family: Arial, sans-serif; background: #020817; }
+    .sky, .sky img { position: fixed; inset: 0; width: 100%; height: 100%; }
+    .sky { z-index: 0; }
+    .sky img { object-fit: cover; object-position: center; }
+    .sky::after { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at center, transparent 25%, rgba(0, 0, 12, .22)); }
+    .hint { position: fixed; z-index: 2; bottom: max(24px, env(safe-area-inset-bottom)); left: 50%; margin: 0; padding: 11px 18px; border-radius: 999px; background: rgba(0, 0, 0, .58); color: #fff; font-size: clamp(18px, 4vw, 28px); font-weight: 600; letter-spacing: .06em; text-shadow: 0 1px 8px #000; transform: translateX(-50%); white-space: nowrap; pointer-events: none; }
+    .star { position: fixed; z-index: 3; width: clamp(64px, 9vw, 124px); height: clamp(64px, 9vw, 124px); padding: 0; border: 0; border-radius: 50%; background: transparent; cursor: pointer; transform: translate(-50%, -50%); }
+    .star:focus-visible { outline: 1px solid rgba(255,255,255,.85); outline-offset: 4px; }
+    .peek { position: fixed; z-index: 3; bottom: 94px; left: 50%; width: clamp(90px, 12vw, 150px); padding: 0; border: 0; background: transparent; cursor: pointer; transform: translateX(-50%); transform-origin: bottom center; transition: transform .3s ease; }
+    .peek:hover { transform: translateX(-50%) translateY(-4px); }
+    .peek.revealing { transform: translateX(-50%) scale(1.12); }
+    .peek img { display: block; width: 100%; filter: drop-shadow(0 5px 9px rgba(0,0,0,.35)); }
+    .heart { position: fixed; z-index: 5; top: -12vh; pointer-events: none; animation: fall var(--fall-time) cubic-bezier(.22,.61,.36,1) forwards; filter: drop-shadow(0 2px 4px rgba(0,0,0,.35)); }
+    @keyframes fall { to { transform: translate(var(--drift), 120vh) rotate(var(--turn)); opacity: .15; } }
+    .modal { position: fixed; z-index: 10; inset: 0; display: grid; place-items: center; padding: 20px; opacity: 0; visibility: hidden; background: rgba(0, 4, 20, .68); backdrop-filter: blur(7px); transition: opacity .45s ease, visibility .45s ease; }
+    .modal.open { opacity: 1; visibility: visible; }
+    .letter { position: relative; width: min(620px, 100%); min-height: min(690px, calc(100vh - 40px)); max-height: calc(100vh - 40px); overflow: hidden; border: 1px solid rgba(255, 218, 237, .42); border-radius: 22px; background: linear-gradient(rgba(5, 8, 30, .25), rgba(10, 0, 16, .76)), url('images/pic_st.png') center / cover; box-shadow: 0 22px 60px rgba(0,0,0,.62), 0 0 28px rgba(131, 183, 255, .28); transform: translateY(18px) scale(.97); transition: transform .45s ease; }
+    .modal.open .letter { transform: translateY(0) scale(1); }
+    .popup-close { position: absolute; z-index: 6; top: 11px; left: 11px; display: grid; width: 32px; height: 32px; padding: 0; place-items: center; border: 1px solid rgba(255,255,255,.35); border-radius: 50%; background: rgba(0,0,0,.46); color: #fff; font-size: 24px; line-height: 1; cursor: pointer; }
+    .popup-close:hover { background: rgba(255, 110, 166, .5); }
+    .message { position: absolute; z-index: 1; inset: 28px 22px 160px; overflow-y: auto; padding: 2px 10px 18px; color: #fff7f7; font-size: clamp(15px, 2.6vw, 18px); line-height: 1.58; white-space: pre-wrap; text-align: left; text-shadow: 0 2px 7px rgba(0,0,0,.85); scrollbar-color: rgba(255, 145, 188, .7) transparent; }
+    .couple { position: absolute; z-index: 2; bottom: -2px; left: 50%; width: min(88%, 430px); height: 190px; padding: 0; border: 0; background: transparent; cursor: pointer; transform: translateX(-50%); }
+    .couple img { width: 100%; height: 100%; object-fit: contain; object-position: bottom center; filter: drop-shadow(0 -5px 16px rgba(0,0,0,.32)); }
+    .couple-hint { position: absolute; z-index: 3; right: 16px; bottom: 13px; margin: 0; color: rgba(255, 247, 238, .9); font-size: 11px; letter-spacing: .09em; text-shadow: 0 2px 6px rgba(0,0,0,.85); pointer-events: none; white-space: nowrap; }
+    .video-layer { position: absolute; z-index: 4; inset: 0; display: grid; place-items: center; opacity: 0; visibility: hidden; background: rgba(0, 0, 8, .94); transition: opacity .3s ease, visibility .3s ease; }
+    .video-layer.open { opacity: 1; visibility: visible; }
+    .kiss-video { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
+    .award-modal { position: fixed; z-index: 12; inset: 0; display: grid; place-items: center; padding: 20px; opacity: 0; visibility: hidden; background: rgba(0, 4, 20, .72); backdrop-filter: blur(7px); transition: opacity .35s ease, visibility .35s ease; }
+    .award-modal.open { opacity: 1; visibility: visible; }
+    .award-card { position: relative; width: min(680px, 100%); max-height: calc(100vh - 40px); overflow-y: auto; padding: 24px; border: 1px solid rgba(255, 218, 237, .42); border-radius: 22px; background: linear-gradient(145deg, rgba(9, 20, 55, .97), rgba(40, 10, 49, .97)); box-shadow: 0 22px 60px rgba(0,0,0,.62), 0 0 28px rgba(131, 183, 255, .28); text-align: center; transform: scale(.95); transition: transform .35s ease; }
+    .award-modal.open .award-card { transform: scale(1); }
+    .award-couple { display: block; width: min(100%, 380px); max-height: 310px; margin: 0 auto 8px; object-fit: contain; }
+    .award-title { margin: 4px 0 18px; color: #fff7ee; font-size: clamp(27px, 6vw, 46px); line-height: 1; text-shadow: 0 2px 10px rgba(0,0,0,.55); }
+    .certificate { display: block; width: 100%; border-radius: 7px; box-shadow: 0 9px 22px rgba(0,0,0,.4); }
+    .cutie-title { margin: 24px 0 14px; color: #fff7ee; font-size: clamp(26px, 5.5vw, 42px); line-height: 1; text-shadow: 0 2px 10px rgba(0,0,0,.55); }
+    .cutie-image { display: block; width: min(100%, 430px); margin: 0 auto; border-radius: 12px; }
+    @media (max-width: 600px) { .letter { min-height: min(620px, calc(100vh - 28px)); border-radius: 18px; } .modal, .award-modal { padding: 14px; } .message { inset: 23px 13px 144px; font-size: 15px; } .couple { height: 170px; width: 100%; } .peek { bottom: 88px; width: 95px; } .award-card { max-height: calc(100vh - 28px); padding: 17px; border-radius: 18px; } .award-couple { max-height: 235px; } }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+  </style>
+</head>
+<body>
+  <picture class="sky">
+    <source media="(max-width: 600px)" srcset="images/pic_p.png">
+    <img id="skyImage" src="images/pic_l.png" alt="">
+  </picture>
+  <button class="star" id="star" aria-label="Open your surprise"></button>
+  <p class="hint">Press on the brightest star</p>
+  <button class="peek" id="peek" type="button" aria-label="Open a special award"><img id="peekImage" src="images/kz_up.png" alt="A character above the star instruction"></button>
+
+  <section class="modal" id="modal" role="dialog" aria-modal="true" aria-label="A message for you">
+    <div class="letter">
+      <button class="popup-close" id="closeMessage" type="button" aria-label="Close popup">&times;</button>
+      <div class="message" id="message">Loading your message...</div>
+      <p class="couple-hint">Touch the image</p>
+      <button class="couple" id="couple" type="button" aria-label="Play our kiss video"><img src="images/pic_us.png" alt="A chibi couple holding hands"></button>
+      <div class="video-layer" id="videoLayer">
+        <video class="kiss-video" id="kissVideo" tabindex="-1" playsinline disablepictureinpicture controlslist="nodownload noplaybackrate noremoteplayback"><source src="images/us_kiss.mp4" type="video/mp4"></video>
+      </div>
+    </div>
+  </section>
+
+  <section class="award-modal" id="awardModal" role="dialog" aria-modal="true" aria-label="Best Stalker Award">
+    <div class="award-card">
+      <button class="popup-close" id="closeAward" type="button" aria-label="Close popup">&times;</button>
+      <img class="award-couple" src="images/trph_us.png" alt="A chibi couple presenting a trophy">
+      <h1 class="award-title">BEST STALKER AWARD</h1>
+      <img class="certificate" src="images/crt.png" alt="Best Stalker Award certificate">
+      <h1 class="cutie-title">AWARDED TO THIS CUTIE</h1>
+      <img class="cutie-image" src="images/tanu.png" alt="The cutie receiving the award">
+    </div>
+  </section>
+
+  <script>
+    const star = document.getElementById('star');
+    const peek = document.getElementById('peek');
+    const peekImage = document.getElementById('peekImage');
+    const awardModal = document.getElementById('awardModal');
+    const closeAwardButton = document.getElementById('closeAward');
+    const modal = document.getElementById('modal');
+    const closeMessageButton = document.getElementById('closeMessage');
+    const message = document.getElementById('message');
+    const couple = document.getElementById('couple');
+    const videoLayer = document.getElementById('videoLayer');
+    const kissVideo = document.getElementById('kissVideo');
+    const localMessageFallback = 'VGhlIE5vcnRoIFN0YXIgaXMgb25lIG9mIHRoZSBicmlnaHRlc3Qgc3RhcnMgdmlzaWJsZSBmcm9tIEVhcnRoLiDinKggV2hpbGUgdGhlIG90aGVyIHN0YXJzIHNlZW0gdG8gZHJpZnQgYWNyb3NzIHRoZSBuaWdodCBza3ksIHRoZSBOb3J0aCBTdGFyIHJlbWFpbnMgYWxtb3N0IHBlcmZlY3RseSBzdGlsbCwgZ3VpZGluZyBjb3VudGxlc3MgdHJhdmVsZXJzIGhvbWUuIPCfjIwKCkp1c3QgbGlrZSB0aGF0LCBiYWJ5LCB5b3UgYXJlIG15IE5vcnRoIFN0YXIuIOKtkCBObyBtYXR0ZXIgaG93IGZhciBhd2F5IHlvdSBhcmUsIHlvdSB3aWxsIGFsd2F5cyBiZSBteSBjb3JuZXJzdG9uZSwgbXkgTm9ydGggU3RhciwgYWx3YXlzIHdpdGggbWUuIOKdpO+4jwoKV2UgbWF5IGhhdmUgb3VyIGhpZ2hzIGFuZCBsb3dzLiDwn6uCIFRpbWVzIHdoZW4gd2UgdGFsayBsZXNzIGFuZCB0aW1lcyB3aGVuIHdlIHRhbGsgYSBsb3QuIPCfkqwgVGltZXMgd2hlbiB3ZSBnZXQgaHVydCBhbmQgdGltZXMgd2hlbiB3ZSBhcmUgc28gZGVlcGx5IGluIGxvdmUuIPCfpbnwn5KVIEJ1dCBubyBtYXR0ZXIgd2hhdCBoYXBwZW5zLCBpbiB0aGUgZW5kIHdlIGFsd2F5cyBsb3ZlIGVhY2ggb3RoZXIgc28gbXVjaC4g4p2k77iPCgpJdCdzIGJlZW4gYSB5ZWFyIHNpbmNlIHlvdSBjYW1lIGludG8gbXkgbGlmZSwgYW5kIEkgY2FuIGhvbmVzdGx5IHNheSBpdCdzIHRoZSBiZXN0IHllYXIgSSd2ZSBldmVyIGhhZC4g8J+luSBZb3UgdHVybmVkIGEgYm95IHdobyBsb3ZlZCBiZWluZyBhbG9uZSBpbnRvIHNvbWVvbmUgd2hvIGhhdGVzIGJlaW5nIGFsb25lIHdpdGhvdXQgaGlzIGJhYnkgbmVhciBoaW0uIPCfpbrwn5KWIFlvdSBtYWRlIHRoaXMgdG91Z2ggYm95IGludG8gdGhlIHNvZnRlc3QgYm95IHdoZW5ldmVyIGl0IGNvbWVzIHRvIHlvdS4g8J+rtgoKSSBtaXNzIHlvdSBhbGwgZGF5LCBldmVyeSBkYXksIGJhYnkuIPCfpbkgWW91IGFyZSB0aGUgYmVzdCB0aGluZyB0aGF0IGhhcyBldmVyIGhhcHBlbmVkIHRvIG1lLCBhbmQgeW91IGFsd2F5cyB3aWxsIGJlLiDinaTvuI8KCllvdSBkZXNlcnZlIGFsbCBteSBodWdzIGFuZCBraXNzZXMuIPCfpJfwn5KLIEkga25vdyB5b3UnbGwgZ2V0IGV2ZXJ5IHNpbmdsZSBvbmUgb2YgdGhlbSB3aGVuIHdlIGZpbmFsbHkgbWVldC4g8J+rguKcqAoKSGFwcHkgR2lybGZyaWVuZHMgRGF5LCBiYWJ5ISDwn4y48J+SlgoKRXZlcnkgZGF5IGlzIHNwZWNpYWwgd2hlbiB5b3UncmUgd2l0aCBtZSwgYW5kIEkgbG92ZSBldmVyeSBtb21lbnQgb2YgaXQuIPCfjLcKCkkgYW0gZ3JhdGVmdWwgYW5kIHByb3VkIHRvIGJlIHlvdXIgYm95ZnJpZW5kLiDinaTvuI8KCllvdSBhcmUgbXkgc3dlZXQgYmFieS4g8J+lufCfkpUgSSBrbm93IHlvdSB3aWxsIGFjaGlldmUgZXZlcnl0aGluZyB5b3UncmUgd29ya2luZyBzbyBoYXJkIGZvciwgYW5kIEkgd2FudCB5b3UgdG8ga25vdyB0aGF0IEkgd2lsbCBhbHdheXMgc3RhbmQgYnkgeW91ciBzaWRlIHRocm91Z2ggeW91ciBoaWdocyBhbmQgeW91ciBsb3dzLCBqdXN0IGxpa2UgeW91IGhhdmUgYWx3YXlzIHN0b29kIGJ5IG1pbmUuIPCfjLnwn6SdCgpJIGxvdmUgeW91LCBIb25leSBQaWUuIOKdpO+4j/Cfja/wn6WnCgpZb3VyIGJhYnksIPCfq7YKCioqS2F6ZSoqIPCfkpwK';
+    let opened = false;
+    let heartShower = null;
+
+    function positionStar() {
+      const portrait = window.matchMedia('(max-width: 600px)').matches;
+      const image = portrait ? { width: 1024, height: 1536, x: 503, y: 267 } : { width: 1672, height: 941, x: 830, y: 232 };
+      const scale = Math.max(window.innerWidth / image.width, window.innerHeight / image.height);
+      const offsetX = (window.innerWidth - image.width * scale) / 2;
+      const offsetY = (window.innerHeight - image.height * scale) / 2;
+      star.style.left = `${offsetX + image.x * scale}px`;
+      star.style.top = `${offsetY + image.y * scale}px`;
+    }
+
+    async function loadMessage() {
+      try {
+        const response = await fetch('images/spc_tanu.txt', { cache: 'no-store' });
+        if (!response.ok) throw new Error('Message could not be loaded');
+        message.textContent = await response.text();
+      } catch (error) {
+        const bytes = Uint8Array.from(atob(localMessageFallback), character => character.charCodeAt(0));
+        message.textContent = new TextDecoder().decode(bytes);
+      }
+    }
+
+    function releaseHearts() {
+      const hearts = ['💗', '💖', '💕', '💘', '💝', '❤️'];
+      for (let i = 0; i < 16; i += 1) {
+        const heart = document.createElement('span');
+        heart.className = 'heart';
+        heart.textContent = hearts[i % hearts.length];
+        heart.style.left = `${Math.random() * 100}vw`;
+        heart.style.fontSize = `${18 + Math.random() * 18}px`;
+        heart.style.setProperty('--drift', `${-90 + Math.random() * 180}px`);
+        heart.style.setProperty('--turn', `${-180 + Math.random() * 360}deg`);
+        heart.style.setProperty('--fall-time', `${2.1 + Math.random() * .7}s`);
+        heart.style.animationDelay = `${Math.random() * .45}s`;
+        heart.addEventListener('animationend', () => heart.remove());
+        document.body.appendChild(heart);
+      }
+    }
+
+    function startHeartShower() {
+      releaseHearts();
+      heartShower = window.setInterval(releaseHearts, 650);
+    }
+
+    function stopHeartShower() {
+      window.clearInterval(heartShower);
+      heartShower = null;
+    }
+
+    function closeAward() {
+      awardModal.classList.remove('open');
+      peek.classList.remove('revealing');
+      peekImage.src = 'images/kz_up.png';
+    }
+
+    peek.addEventListener('click', () => {
+      if (awardModal.classList.contains('open')) return;
+      peek.classList.add('revealing');
+      window.setTimeout(() => {
+        peekImage.src = 'images/star.png';
+        awardModal.classList.add('open');
+      }, 220);
+    });
+    awardModal.addEventListener('click', event => { if (event.target === awardModal) closeAward(); });
+    closeAwardButton.addEventListener('click', closeAward);
+
+    function closeKissVideo() {
+      kissVideo.pause();
+      kissVideo.currentTime = 0;
+      videoLayer.classList.remove('open');
+    }
+
+    couple.addEventListener('click', () => {
+      videoLayer.classList.add('open');
+      kissVideo.currentTime = 0;
+      kissVideo.play().catch(() => closeKissVideo());
+    });
+    kissVideo.addEventListener('ended', closeKissVideo);
+
+    star.addEventListener('click', () => {
+      if (opened) return;
+      opened = true;
+      star.hidden = true;
+      document.querySelector('.hint').hidden = true;
+      startHeartShower();
+      window.setTimeout(() => modal.classList.add('open'), 3000);
+    });
+    function resetSurprise() {
+      modal.classList.remove('open');
+      closeKissVideo();
+      stopHeartShower();
+      opened = false;
+      star.hidden = false;
+      document.querySelector('.hint').hidden = false;
+    }
+    modal.addEventListener('click', event => { if (event.target === modal) resetSurprise(); });
+    closeMessageButton.addEventListener('click', resetSurprise);
+    document.addEventListener('keydown', event => {
+      if (event.key !== 'Escape') return;
+      if (awardModal.classList.contains('open')) closeAward();
+      else if (modal.classList.contains('open')) resetSurprise();
+    });
+    window.addEventListener('resize', positionStar);
+    positionStar();
+    loadMessage();
+  </script>
+</body>
+</html>
